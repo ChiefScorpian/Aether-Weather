@@ -114,7 +114,7 @@
 
                 <!-- Right Side Actions (Install & Unit Switch Mobile) -->
                 <div class="flex items-center gap-2 md:hidden">
-                    <button id="pwa-install-mob" class="hidden px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold items-center gap-1 transition-all shadow">
+                    <button id="pwa-install-mob" class="px-2.5 py-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1 transition-all shadow border border-white/10 active:scale-95">
                         <i data-lucide="download" class="w-3.5 h-3.5"></i> Install
                     </button>
                     <div class="flex items-center bg-slate-900/80 p-1 rounded-xl border border-white/10">
@@ -154,7 +154,7 @@
 
             <!-- Desktop Actions -->
             <div class="hidden md:flex items-center gap-3">
-                <button id="pwa-install-btn" class="hidden px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-lg active:scale-95 border border-white/10">
+                <button id="pwa-install-btn" class="px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-lg active:scale-95 border border-white/10">
                     <i data-lucide="download" class="w-4 h-4"></i> Install App
                 </button>
                 <div class="flex items-center bg-slate-900/80 p-1 rounded-xl border border-white/10">
@@ -409,6 +409,47 @@
         <p>Aether Weather • Powered by Open-Meteo API & RainViewer Radar Tiles</p>
     </footer>
 
+    <!-- INSTALL INSTRUCTIONS MODAL (FOR SAMSUNG GALAXY & MOBILE BROWSERS) -->
+    <div id="install-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[1000] hidden flex items-center justify-center p-4">
+        <div class="glass-panel max-w-sm w-full rounded-3xl p-6 text-slate-100 relative shadow-2xl border border-white/15 animate-in fade-in zoom-in duration-200">
+            <button id="close-modal-btn" type="button" class="absolute top-4 right-4 p-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+            <div class="flex items-center gap-3 mb-4">
+                <div class="p-3 bg-blue-600/20 text-blue-400 rounded-2xl border border-blue-400/30">
+                    <i data-lucide="smartphone" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg leading-tight text-white">Install on Samsung / Android</h3>
+                    <p class="text-xs text-slate-400">Add to Home Screen</p>
+                </div>
+            </div>
+
+            <p class="text-xs text-slate-300 leading-relaxed mb-4">
+                To install <strong class="text-white">Aether Weather</strong> as an app on your Samsung Galaxy S26:
+            </p>
+
+            <div class="space-y-3 text-xs bg-slate-900/80 p-3.5 rounded-2xl border border-white/10">
+                <div class="flex items-start gap-2.5">
+                    <span class="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-[10px]">1</span>
+                    <p class="text-slate-200">Tap the <strong class="text-white">Menu icon</strong> in your browser (<strong class="text-blue-300">≡</strong> or <strong class="text-blue-300">⋮</strong> usually at the bottom or top right).</p>
+                </div>
+                <div class="flex items-start gap-2.5">
+                    <span class="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-[10px]">2</span>
+                    <p class="text-slate-200">Select <strong class="text-white">"Add page to"</strong> or <strong class="text-white">"Install app"</strong> / <strong class="text-white">"Add to Home screen"</strong>.</p>
+                </div>
+                <div class="flex items-start gap-2.5">
+                    <span class="w-5 h-5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-[10px]">3</span>
+                    <p class="text-slate-200">Tap <strong class="text-white">Add</strong> to create the standalone app icon on your home screen!</p>
+                </div>
+            </div>
+
+            <button id="modal-gotit-btn" type="button" class="w-full mt-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg active:scale-95">
+                Got It
+            </button>
+        </div>
+    </div>
+
     <!-- JAVASCRIPT APPLICATION -->
     <script>
         // Initialize Lucide Icons Safely
@@ -421,15 +462,16 @@
         }
 
         /* PWA INSTALLATION EVENT HANDLER */
-        let deferredPrompt;
+        let deferredPrompt = null;
         const installBtn = document.getElementById('pwa-install-btn');
         const installBtnMob = document.getElementById('pwa-install-mob');
+        const installModal = document.getElementById('install-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const modalGotitBtn = document.getElementById('modal-gotit-btn');
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            if (installBtn) installBtn.classList.remove('hidden');
-            if (installBtnMob) installBtnMob.classList.remove('hidden');
         });
 
         async function triggerInstallPrompt() {
@@ -437,15 +479,18 @@
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
                 if (outcome === 'accepted') {
-                    if (installBtn) installBtn.classList.add('hidden');
-                    if (installBtnMob) installBtnMob.classList.add('hidden');
+                    deferredPrompt = null;
                 }
-                deferredPrompt = null;
+            } else {
+                // If browser didn't supply automated prompt, open instructions for Samsung / Android
+                if (installModal) installModal.classList.remove('hidden');
             }
         }
 
         installBtn?.addEventListener('click', triggerInstallPrompt);
         installBtnMob?.addEventListener('click', triggerInstallPrompt);
+        closeModalBtn?.addEventListener('click', () => installModal?.classList.add('hidden'));
+        modalGotitBtn?.addEventListener('click', () => installModal?.classList.add('hidden'));
 
         // Register Inline Blob Service Worker for Offline PWA Compliance
         if ('serviceWorker' in navigator) {
