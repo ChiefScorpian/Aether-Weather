@@ -1,11 +1,22 @@
-
 <!DOCTYPE html>
 <html lang="en" class="h-full bg-slate-950">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#020617">
+    <meta name="description" content="Aether Weather - Live Radar & Real-Time Weather Forecast Engine">
+
+    <!-- Mobile Standalone Web App Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Aether Weather">
+    <meta name="mobile-web-app-capable" content="yes">
+
     <title>Aether Weather - Live Radar & Real-Time Forecasts</title>
     
+    <!-- Web App Manifest (Data URI to maintain single-file mandate while enabling PWA installation) -->
+    <link rel="manifest" href='data:application/manifest+json,{"name":"Aether Weather","short_name":"AetherWeather","start_url":".","display":"standalone","background_color":"#020617","theme_color":"#020617","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/1163/1163661.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}'>
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -101,10 +112,15 @@
                     </div>
                 </div>
 
-                <!-- Mobile Unit Switcher -->
-                <div class="flex md:hidden items-center bg-slate-900/80 p-1 rounded-xl border border-white/10">
-                    <button id="unit-c-mob" class="px-3 py-1 rounded-lg text-xs font-bold transition-all text-slate-400">°C</button>
-                    <button id="unit-f-mob" class="px-3 py-1 rounded-lg text-xs font-bold transition-all bg-blue-600 text-white">°F</button>
+                <!-- Right Side Actions (Install & Unit Switch Mobile) -->
+                <div class="flex items-center gap-2 md:hidden">
+                    <button id="pwa-install-mob" class="hidden px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold items-center gap-1 transition-all shadow">
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i> Install
+                    </button>
+                    <div class="flex items-center bg-slate-900/80 p-1 rounded-xl border border-white/10">
+                        <button id="unit-c-mob" class="px-3 py-1 rounded-lg text-xs font-bold transition-all text-slate-400">°C</button>
+                        <button id="unit-f-mob" class="px-3 py-1 rounded-lg text-xs font-bold transition-all bg-blue-600 text-white">°F</button>
+                    </div>
                 </div>
             </div>
 
@@ -136,8 +152,11 @@
                 <div id="suggestions-box" class="hidden absolute left-0 right-0 top-full mt-2 bg-slate-900/95 backdrop-blur-2xl border border-white/15 rounded-xl shadow-2xl z-50 overflow-hidden max-h-64 overflow-y-auto"></div>
             </div>
 
-            <!-- Desktop Unit Switcher -->
+            <!-- Desktop Actions -->
             <div class="hidden md:flex items-center gap-3">
+                <button id="pwa-install-btn" class="hidden px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-lg active:scale-95 border border-white/10">
+                    <i data-lucide="download" class="w-4 h-4"></i> Install App
+                </button>
                 <div class="flex items-center bg-slate-900/80 p-1 rounded-xl border border-white/10">
                     <button id="unit-c" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white">°C</button>
                     <button id="unit-f" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-blue-600 text-white">°F</button>
@@ -399,6 +418,46 @@
             } catch (e) {
                 console.warn("Lucide icon init warning:", e);
             }
+        }
+
+        /* PWA INSTALLATION EVENT HANDLER */
+        let deferredPrompt;
+        const installBtn = document.getElementById('pwa-install-btn');
+        const installBtnMob = document.getElementById('pwa-install-mob');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (installBtn) installBtn.classList.remove('hidden');
+            if (installBtnMob) installBtnMob.classList.remove('hidden');
+        });
+
+        async function triggerInstallPrompt() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    if (installBtn) installBtn.classList.add('hidden');
+                    if (installBtnMob) installBtnMob.classList.add('hidden');
+                }
+                deferredPrompt = null;
+            }
+        }
+
+        installBtn?.addEventListener('click', triggerInstallPrompt);
+        installBtnMob?.addEventListener('click', triggerInstallPrompt);
+
+        // Register Inline Blob Service Worker for Offline PWA Compliance
+        if ('serviceWorker' in navigator) {
+            const swCode = `
+                self.addEventListener('install', (e) => self.skipWaiting());
+                self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
+                self.addEventListener('fetch', (e) => {
+                    e.respondWith(fetch(e.request).catch(() => new Response('Offline')));
+                });
+            `;
+            const blob = new Blob([swCode], { type: 'text/javascript' });
+            navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
         }
 
         /* WMO CODES MAPPER */
