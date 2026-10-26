@@ -14,8 +14,8 @@
 
     <title>Aether Weather - Live Radar & Real-Time Forecasts</title>
     
-    <!-- Web App Manifest (Data URI to maintain single-file mandate while enabling PWA installation) -->
-    <link rel="manifest" href='data:application/manifest+json,{"name":"Aether Weather","short_name":"AetherWeather","start_url":".","display":"standalone","background_color":"#020617","theme_color":"#020617","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/1163/1163661.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]}'>
+    <!-- External Web App Manifest File for Android/Chrome Installation -->
+    <link rel="manifest" href="./manifest.json">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -492,17 +492,13 @@
         closeModalBtn?.addEventListener('click', () => installModal?.classList.add('hidden'));
         modalGotitBtn?.addEventListener('click', () => installModal?.classList.add('hidden'));
 
-        // Register Inline Blob Service Worker for Offline PWA Compliance
+        // Register Standalone Service Worker (sw.js)
         if ('serviceWorker' in navigator) {
-            const swCode = `
-                self.addEventListener('install', (e) => self.skipWaiting());
-                self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
-                self.addEventListener('fetch', (e) => {
-                    e.respondWith(fetch(e.request).catch(() => new Response('Offline')));
-                });
-            `;
-            const blob = new Blob([swCode], { type: 'text/javascript' });
-            navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('ServiceWorker registered:', reg.scope))
+                    .catch(err => console.warn('ServiceWorker registration failed:', err));
+            });
         }
 
         /* WMO CODES MAPPER */
